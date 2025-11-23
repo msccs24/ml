@@ -1,0 +1,87 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+import warnings
+warnings.filterwarnings('ignore')
+
+df = pd.read_csv(r"ML\Employee_Salary_Dataset.csv")
+print(df.head(5))
+print("Information :\n")
+df.info()
+print("describe :\n",df.describe())
+
+df.dropna(inplace=True)
+
+X = df[['Salary']]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+print("\n1.Elbow method :")
+wcss = []
+K_e = range(1,11)
+for k in K_e:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    wcss.append(kmeans.inertia_)
+    print(f"k={k}, WCSS={kmeans.inertia_:.2f}")
+
+print(f"\nFor k = {k} WCSS : {wcss}")
+plt.title(f'Elbow Method for Optimal k={k}')
+plt.xlabel('Number of clusters (k)')
+plt.ylabel('ECSS Inertia')
+plt.xticks(K_e)
+plt.grid(True)
+plt.legend()
+plt.show()
+
+print("\n2.Silhouette Score :")
+sil_score = []
+K_s = range(2,11)
+for k in K_s:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    score = silhouette_score(X_scaled, kmeans.labels_)
+    sil_score.append(score)
+
+print(f"For k = {k}, Silhouette Score = {score:.3f}")
+
+plt.figure(figsize=(10,5))
+plt.plot(K_s, sil_score, marker='*')
+plt.title(f'Silhouette Score for Optimal k={k}')
+plt.xlabel('Number of clusters (k)')
+plt.ylabel('Silhouette Score')
+plt.xticks(K_s)
+plt.grid(True)
+plt.legend()
+plt.show()
+
+optimal_k = 3   
+print(f"\nFinal K-Means Model (k={optimal_k})")
+
+kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
+df['Income_Group'] = kmeans.fit_predict(X_scaled)
+
+
+centers = scaler.inverse_transform(kmeans.cluster_centers_)
+centroid_labels = [f"Group {i+1}: {int(c[0])}  (avg income)" for i, c in enumerate(centers)]
+print("\nCluster Centers (approx):\n", centroid_labels)
+
+print("\n Employee data with assigned income group")
+print(df.head())
+
+plt.figure(figsize=(8,5))
+sns.scatterplot(x=df.index, y='Salary', hue='Income_Group', palette='tab10', data=df)
+plt.title(f'Employee Income Classified into {optimal_k} Groups')
+plt.xlabel('Employee Index')
+plt.ylabel('Annual Salary')
+plt.legend()
+plt.show()
+
+
+Q2
+
