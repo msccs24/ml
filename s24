@@ -1,0 +1,105 @@
+import pandas as pd
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier,plot_tree
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report,roc_auc_score, roc_curve
+import warnings
+warnings.filterwarnings("ignore")
+
+data = pd.read_csv(r'ML\BankNote_Authentication.csv')
+print("Original Data set")
+print(data)
+
+X=data.drop(['class'],axis='columns')
+y=data['class']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+decisiontree=tree.DecisionTreeClassifier()
+decisiontree.fit(X_train,y_train)
+
+y_pred=decisiontree.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy Score: ",accuracy)
+
+class_report = classification_report(y_test, y_pred)
+print("Classification Report: ",class_report)
+
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("Confusion Matrix:\n",conf_matrix)
+
+plt.figure(figsize=(6,4))
+sns.heatmap(conf_matrix,annot=True, fmt='d', cmap='Blues',xticklabels=['Not Survived', 'Survived'],yticklabels=['Not Survived', 'Survived'])
+plt.title('Confusion Matrix Heatmap')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
+
+y_prob = decisiontree.predict_proba(X_test)[:, 1] 
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+auc_score = roc_auc_score(y_test, y_prob)
+print("ROC_AUC Score: ",auc_score)
+
+plt.figure(figsize=(6, 4))
+plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {auc_score:.2f})')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve for Decision Tree Classifier')
+plt.legend(loc="lower right")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(15,8))
+tree.plot_tree(decisiontree,filled=True,feature_names=X.columns,rounded=True,class_names=['Genuine(True)','Forged(False)'])
+plt.title('Decision Tree Visualization')
+plt.show()
+
+Q2
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+df = pd.read_csv("UniversalBank.csv")
+
+# Drop obvious non-feature columns if present
+for col in ['ID', 'ZIP Code', 'ZipCode', 'Zip']:
+    if col in df.columns:
+        df = df.drop(col, axis=1)
+
+# Identify target column (commonly 'Personal Loan')
+target_col = 'Personal Loan'
+if target_col not in df.columns:
+    # fallback to last column
+    target_col = df.columns[-1]
+
+# Encode categorical (object) columns
+le = LabelEncoder()
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = le.fit_transform(df[col])
+
+X = df.drop(columns=[target_col])
+y = df[target_col]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42, stratify=y if len(y.unique())>1 else None
+)
+
+# Linear SVM
+model = SVC(kernel='linear', probability=False, random_state=42)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+print("Accuracy:", round(accuracy_score(y_test, y_pred), 4))
+
+print("\nPredicted (first 10):", y_pred[:10])
+print("Actual    (first 10):", y_test.values[:10])
