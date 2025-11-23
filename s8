@@ -1,0 +1,104 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import fetch_20newsgroups
+import warnings
+warnings.filterwarnings('ignore')
+
+categories = fetch_20newsgroups(subset='train').target_names
+
+print("Available categories:",categories)
+
+data = fetch_20newsgroups(subset='train', categories=categories, remove=('headers','footers','quotes'))
+
+df = pd.DataFrame({'text':data.data, 'labels':[data.target_names[i]
+                                                for i in data.target
+                                                ]})
+
+x_train, x_test, y_train, y_test = train_test_split(df['text'], df['labels'], test_size=0.3, random_state=42)
+
+vectorizer = CountVectorizer() 
+x_trv = vectorizer.fit_transform(x_train)
+x_tev = vectorizer.transform(x_test)
+
+nvmodel = MultinomialNB()
+nvmodel.fit(x_trv,y_train)
+
+y_pred = nvmodel.predict(x_tev)
+
+
+ac = accuracy_score(y_test,y_pred)
+print(classification_report(y_test, y_pred))
+c_m = confusion_matrix(y_test, y_pred, labels=categories)
+
+
+plt.figure(figsize=(2,1))
+sns.heatmap(c_m, annot=True, fmt='d', cmap='Blues',
+            xticklabels=categories,
+            yticklabels=categories)
+plt.title('Confusion Matrix')
+plt.ylabel('Actual')
+plt.xlabel('Predicted')
+plt.show()
+
+# Plot the number of samples per category
+category_counts = df['labels'].value_counts()
+
+plt.figure(figsize=(3,2))
+plt.bar(category_counts.index, category_counts.values, color='skyblue')
+plt.title('Number of Samples per Category')
+plt.xlabel('Category')
+plt.ylabel('Count')
+plt.xticks(rotation=45)
+plt.show()
+
+
+msg = input("enter the news:")
+print(msg)
+custom_vector = vectorizer.transform([msg])
+y_pred1 = nvmodel.predict(custom_vector)[0]
+print("\n\n Predicted Category: " ,y_pred1)
+
+Q2
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, export_text
+from sklearn.metrics import accuracy_score
+
+data = {
+    "Outlook": ["Sunny","Sunny","Overcast","Rain","Rain","Rain","Overcast","Sunny","Sunny","Rain","Sunny","Overcast","Overcast","Rain"],
+    "Temperature": ["Hot","Hot","Hot","Mild","Cool","Cool","Cool","Mild","Cool","Mild","Mild","Mild","Hot","Mild"],
+    "Humidity": ["High","High","High","High","Normal","Normal","Normal","High","Normal","Normal","Normal","High","Normal","High"],
+    "Windy": ["False","True","False","False","False","True","True","False","False","False","True","True","False","True"],
+    "Play": ["No","No","Yes","Yes","Yes","No","Yes","No","Yes","Yes","Yes","Yes","Yes","No"]
+}
+df = pd.DataFrame(data)
+
+le = LabelEncoder()
+for col in df.columns:
+    df[col] = le.fit_transform(df[col])
+
+X = df.drop("Play", axis=1)
+y = df["Play"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+clf = DecisionTreeClassifier(criterion='entropy', random_state=42)
+clf.fit(X_train, y_train)
+
+y_pred = clf.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+print("\nPredicted:", y_pred)
+print("Actual:   ", y_test.values)
+
+feature_names = list(X.columns)
+tree_rules = export_text(clf, feature_names=feature_names)
+print("\nDecision Tree rules:\n")
+print(tree_rules)
