@@ -1,0 +1,117 @@
+import pandas as pd
+import math 
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+import warnings
+warnings.filterwarnings("ignore")
+df =pd.read_csv(r'ML\Position_Salaries.csv')
+print(df)
+
+print("\nPosition Salaries Description : ")
+print(df.describe())
+print("\nPosition Salaries Information : ")
+print(df.info())
+X = df[['Level']].values
+print(X)
+y = df['Salary'].values
+print(y)
+
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,random_state=42)
+print("\n\nSimple Regression : \n")
+sl_model=LinearRegression()
+sl_model.fit(X_train,y_train)
+y_pred = sl_model.predict(X_test)
+sl_model.fit(df[['Level']],df['Salary'])
+
+print("MSE:", mean_squared_error(y_test, y_pred))
+print("Root MSE: ",math.sqrt(mean_squared_error(y_test,y_pred)))
+print("Mean Absolute Error",mean_absolute_error(y_test,y_pred))
+print("R_square Score:", r2_score(y_test, y_pred))
+print("Coefficient for Level",sl_model.coef_)
+print("Intercept for Level",sl_model.intercept_)
+
+print("Prediction for Level 11 : ",sl_model.predict([[11]])[0])
+print("Prediction for Level 12 : ",sl_model.predict([[12]])[0])
+
+
+plt.scatter(X, y, color="red")
+plt.plot(X, sl_model.predict(X), color="blue", label="Linear Regression")
+plt.title("Salary vs Level (Simple Linear Regression)")
+plt.xlabel("Level")
+plt.ylabel("Salary")
+plt.legend()
+plt.show()
+
+print("\n\nPolynomial Regression : \n")
+
+for d in range(1, 7):
+    feature = PolynomialFeatures(degree=d)
+    X_poly_train=feature.fit_transform(X_train)
+    X_poly_test=feature.transform(X_test)
+    plr_model=LinearRegression()
+    plr_model.fit(X_poly_train,y_train)
+
+
+    y_poly_pred= plr_model.predict(X_poly_test)
+
+    X_grid = np.arange(min(X), max(X), 0.1).reshape(-1, 1)
+    plt.scatter(X, y, color="red")
+    plt.plot(X_grid, plr_model.predict(feature.transform(X_grid)), color="green", label="Polynomial Regression")
+    plt.title(f'Salary vs Level (Polynomial Regression)-Degree {d}')
+    plt.xlabel("Level")
+    plt.ylabel("Salary")
+    plt.legend()
+    plt.show()
+
+print("Degree : ",d)
+print("\nMSE:", mean_squared_error(y_test, y_poly_pred))
+print("\nRoot MSE: ",math.sqrt(mean_squared_error(y_test,y_poly_pred)))
+print("\nMean Absolute Error",mean_absolute_error(y_test,y_poly_pred))
+print("\nR² Score:", r2_score(y_test, y_poly_pred))
+
+print("\nCoefficient :  ",plr_model.coef_)
+print("\nIntercept :  ",plr_model.intercept_)
+
+print("Prediction for Level 11 : ",plr_model.predict(feature.transform([[11]]))[0])
+print("Prediction for Level 12 : ",plr_model.predict(feature.transform([[12]]))[0])
+
+Q2
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+
+df = pd.read_csv("weather.csv")
+df = df.dropna()
+
+# If target column isn't named 'Play', change this variable accordingly
+target_col = 'Play'
+if target_col not in df.columns:
+    target_col = df.columns[-1]   # fallback: last column as target
+
+for col in df.columns:
+    if df[col].dtype == 'object' or df[col].dtype.name == 'category':
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
+
+X = df.drop(columns=[target_col])
+y = df[target_col]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = GaussianNB()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+print("Predicted:", y_pred)
+print("Actual:   ", y_test.values)
+print("Accuracy:", round(accuracy_score(y_test, y_pred), 4))
+
