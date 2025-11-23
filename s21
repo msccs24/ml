@@ -1,0 +1,117 @@
+import pandas as pd
+import numpy as np          
+import math
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import warnings
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv(r"ML\minihomeprices.csv")
+print(df)
+
+print("Info:",df.info())
+
+med = df['bedrooms'].median()
+print(med)
+
+
+df['bedrooms'] = df['bedrooms'].fillna(med)
+print("Replace Missing value by median and modified in daa set")
+print(df)
+
+print("Visualization of data set by combined feature:")
+sns.pairplot(df,x_vars = ['area','bedrooms','age'],y_vars=['price'],kind='reg')
+plt.show()
+
+print("Visualization of data set by Individual feature:")
+sns.lmplot(x="area",y='price',data=df)
+plt.show()
+sns.lmplot(x="bedrooms",y='price',data=df)
+plt.show()
+sns.lmplot(x="age",y='price',data=df)
+plt.show()
+
+print("Prediction")
+X = df[['area','bedrooms','age']]
+print(X)
+
+print("Target:")
+Y = df['price']
+print(Y)
+
+X_train,X_test,y_train,y_test = train_test_split(X,Y,test_size = 0.3,random_state=42)
+mlr_model = LinearRegression()
+mlr_model.fit(X_train,y_train)
+y_pred = mlr_model.predict(X_test)
+print("ypred",y_pred)
+print("y_test",y_test)
+print("Coefficient m1 for Area {}, m2 for Bedrroms {}, m3 for Age {}",mlr_model.coef_)
+
+print("Intercept: ",mlr_model.intercept_)
+
+comparision = pd.DataFrame({'Actual_Price:':y_test,'Predicted_Price':y_pred})
+print(comparision)
+
+mse = mean_squared_error(y_test,y_pred)
+print("Mean Squared Error: ",mse)
+
+rmse = math.sqrt(mse) 
+print("Root Mean Squared Error: ",rmse)
+
+mae = mean_absolute_error(y_test,y_pred)
+print("Mean Absolute Error: ",mae)
+
+r_squared = r2_score(y_test,y_pred)
+print("R-squared Error: ",r_squared)
+
+score = mlr_model.score(X_test, y_pred)
+print(f"R^2 score:{score*100:.2f}% ")
+
+
+y_pred = mlr_model.predict([[4000,2,10]])
+print("Predict for 4000,2,10 :",y_pred)
+
+y_pred = mlr_model.predict([[3000,4,5]])
+print("Predict for 3000,4,5 :",y_pred)
+
+y_pred = mlr_model.predict([[2500,2,3]])
+print("Predict for 2500,2,3 :",y_pred)
+
+Q2
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+df = pd.read_csv("UniversalBank.csv")
+
+# Drop unnecessary columns if present
+for col in ['ID', 'ZIP Code']:
+    if col in df.columns:
+        df = df.drop(col, axis=1)
+
+# Encode categorical columns
+le = LabelEncoder()
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = le.fit_transform(df[col])
+
+X = df.drop("Personal Loan", axis=1)
+y = df["Personal Loan"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = SVC(kernel='linear')
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print("Predicted:", y_pred[:10])
+print("Actual:   ", y_test.values[:10])
+print("Accuracy:", accuracy_score(y_test, y_pred))
