@@ -1,0 +1,154 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import fetch_20newsgroups
+import warnings
+warnings.filterwarnings('ignore')
+
+categories = fetch_20newsgroups(subset='train').target_names
+
+print("Available categories:",categories)
+
+data = fetch_20newsgroups(subset='train', categories=categories, remove=('headers','footers','quotes'))
+
+df = pd.DataFrame({'text':data.data, 'labels':[data.target_names[i]
+                                                for i in data.target
+                                                ]})
+
+x_train, x_test, y_train, y_test = train_test_split(df['text'], df['labels'], test_size=0.3, random_state=42)
+
+vectorizer = CountVectorizer() 
+x_trv = vectorizer.fit_transform(x_train)
+x_tev = vectorizer.transform(x_test)
+
+#train the Naive Bays model
+nvmodel = MultinomialNB()
+nvmodel.fit(x_trv,y_train)
+y_pred = nvmodel.predict(x_tev)
+
+
+ac = accuracy_score(y_test,y_pred)
+print(classification_report(y_test, y_pred))
+c_m = confusion_matrix(y_test, y_pred, labels=categories)
+
+
+plt.figure(figsize=(2,1))
+sns.heatmap(c_m, annot=True, fmt='d', cmap='Blues',
+            xticklabels=categories,
+            yticklabels=categories)
+plt.title('Confusion Matrix')
+plt.ylabel('Actual')
+plt.xlabel('Predicted')
+plt.show()
+
+category_counts = df['labels'].value_counts()
+
+plt.figure(figsize=(3,2))
+plt.bar(category_counts.index, category_counts.values, color='skyblue')
+plt.title('Number of Samples per Category')
+plt.xlabel('Category')
+plt.ylabel('Count')
+plt.xticks(rotation=45)
+plt.show()
+
+msg = input("enter the news:")
+print(msg)
+custom_vector = vectorizer.transform([msg])
+y_pred1 = nvmodel.predict(custom_vector)[0]
+print("\n\n Predicted Category: " ,y_pred1)
+
+Q2
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.preprocessing import LabelEncoder, label_binarize, StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc
+from sklearn.multiclass import OneVsRestClassifier
+import seaborn as sns
+import numpy as np
+
+data = pd.read_csv(r"ML\IRIS.csv")
+print("Dataset Preview:")
+print(data, "\n")
+
+X = data.iloc[:, 0:4].values
+y = data.iloc[:, 4].values
+
+le = LabelEncoder()
+y = le.fit_transform(y)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+sc = StandardScaler()
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+
+print("Available Kernels: linear | poly | rbf | sigmoid")
+user_kernel = input("Enter the kernel you want to use: ").strip().lower()
+
+if user_kernel not in ['linear', 'poly', 'rbf', 'sigmoid']:
+    print("Invalid kernel! Defaulting to 'linear'.")
+    user_kernel = 'linear'
+
+model = SVC(kernel=user_kernel, probability=True)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+print(f"\nSVM Model Evaluation ({user_kernel} Kernel)")
+acc = accuracy_score(y_test, y_pred)
+print(f"Accuracy Score: {acc*100:.2f}%\n")
+print("Classification Report:")
+print(classification_report(y_test, y_pred, target_names=le.classes_))
+
+print("Confusion Matrix:")
+cm = confusion_matrix(y_test, y_pred)
+print(cm, "\n")
+
+plt.figure(figsize=(6, 4))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=le.classes_, yticklabels=le.classes_)
+plt.title(f"SVM Confusion Matrix ({user_kernel} kernel)")
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
+
+y_test_bin = label_binarize(y_test, classes=[0, 1, 2])
+ovr = OneVsRestClassifier(SVC(kernel=user_kernel, probability=True, random_state=42))
+y_score = ovr.fit(X_train, y_train).predict_proba(X_test)
+
+# Plot ROC curves
+plt.figure(figsize=(7, 6))
+for i in range(3):
+    fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_score[:, i])
+    auc_score = auc(fpr, tpr)
+    plt.plot(fpr, tpr, lw=2, label=f"{le.classes_[i]} (AUC = {auc_score:.2f})")
+plt.title(f"ROC Curve for SVM ({user_kernel} kernel)")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.grid(alpha=0.3)
+plt.show()
+
+print("\nPredict Flower Type")
+sepal_length = float(input("Enter Sepal Length (cm): "))
+sepal_width  = float(input("Enter Sepal Width (cm): "))
+petal_length = float(input("Enter Petal Length (cm): "))
+petal_width  = float(input("Enter Petal Width (cm): "))
+
+sample_input = [[sepal_length, sepal_width, petal_length, petal_width]]
+sample_input = sc.transform(sample_input)
+
+predicted_class = model.predict(sample_input)[0]
+predicted_flower = le.inverse_transform([predicted_class])[0]
+
+print("\n Result ")
+print(f"Kernel Used: {user_kernel}")
+print(f"Predicted Flower Type: {predicted_flower.upper()}")
