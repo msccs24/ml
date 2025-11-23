@@ -84,4 +84,42 @@ plt.show()
 
 
 Q2
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+df = pd.read_csv("housing.csv")
+print("First 5 rows of dataset:")
+print(df.head())
+
+print("\nNull values in each column:")
+print(df.isnull().sum())
+df = df.dropna()
+
+print("\nAfter removing null values:")
+print(df.isnull().sum())
+print("Dataset shape:", df.shape)
+
+X = df[['area']]        # independent variable
+y = df['price']         # dependent variable
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+print("\nPredicted Prices:")
+print(y_pred)
+
+plt.scatter(X, y, label="Actual Data")
+plt.plot(X, model.predict(X), color='red', label="Regression Line")
+plt.xlabel("Area (sq ft)")
+plt.ylabel("Price")
+plt.title("Simple Linear Regression - House Price Prediction")
+plt.legend()
+plt.show()
 
