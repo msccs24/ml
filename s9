@@ -1,0 +1,192 @@
+import pandas as pd
+import math 
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.discriminant_analysis import StandardScaler
+from sklearn.linear_model import RidgeCV,Lasso, ElasticNet
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+import warnings
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv(r'ML\housing.csv')
+print(df)
+
+print("\nBoston House Description : ")
+print(df.describe())
+print("\nBoston House Info : ")
+print(df.info())
+
+X= df.drop(['MEDV'], axis=1, inplace=False)
+print(X)
+
+y = df['MEDV']
+print(y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print("\nRidge Regression :")
+RCV = RidgeCV(alphas=[0.01, 0.1, 1.0], cv=5)
+RCV.fit(X_train_scaled, y_train)
+y_pred = RCV.predict(X_test_scaled)
+
+cff = RCV.coef_
+print("\nCoefficient :  ", cff)
+print("RM Coefficient :  ", RCV.coef_[0])
+print("LSTAT Coefficient :  ", RCV.coef_[1])
+print("PTRAIO Coefficient :  ", RCV.coef_[2])
+
+mse = mean_squared_error(y_test, y_pred)
+rmse = math.sqrt(mse)
+mae = mean_absolute_error(y_test, y_pred)
+r_squared = r2_score(y_test, y_pred)
+
+print(f"\nMean Squared Error (MSE):", mse)
+print(f"Root Mean Squared Error (RMSE):", rmse)
+print(f"Mean Absolute Error (MAE):", mae)
+print(f"R-squared (R²):", r_squared)
+
+positions = [0, 1, 2]
+plt.plot(positions, cff[:3], color='red')
+plt.xticks(positions, ['RM','LSTAT','PTRATIO'], rotation=45)
+plt.ylabel('Coefficient Value')
+plt.title('RidgeCV Coefficients for Selected Features')
+plt.grid(True)
+plt.show()
+
+print("Lasso Regression :")
+lasso = Lasso(alpha=0.1)
+lasso.fit(X_train_scaled, y_train)
+lasso_pred = lasso.predict(X_test_scaled)
+
+cff = lasso.coef_
+print("\nCoefficient :  ", cff)
+print("RM Coefficient :  ", lasso.coef_[0])
+print("LSTAT Coefficient :  ", lasso.coef_[1])
+print("PTRAIO Coefficient :  ", lasso.coef_[2])
+
+mse = mean_squared_error(y_test, y_pred)
+rmse = math.sqrt(mse)
+mae = mean_absolute_error(y_test, y_pred)
+r_squared = r2_score(y_test, y_pred)
+
+print(f"\nMean Squared Error (MSE):", mse)
+print(f"Root Mean Squared Error (RMSE):", rmse)
+print(f"Mean Absolute Error (MAE):", mae)
+print(f"R-squared (R²):", r_squared)
+           
+positions = [0, 1, 2]
+plt.plot(positions, cff[:3], color='red')
+plt.xticks(positions, ['RM','LSTAT','PTRATIO'], rotation=45)
+plt.ylabel('Coefficient Value')
+plt.title('Lasso Coefficients for Selected Features')
+plt.grid(True)
+plt.show()
+
+print("ElasticNet Regression :")
+eln = ElasticNet(alpha=0.1, l1_ratio=0.5)
+eln.fit(X_train_scaled, y_train)
+eln_pred = eln.predict(X_test_scaled)
+
+cff = eln.coef_
+print("\nCoefficient :  ", cff)
+print("RM Coefficient :  ", eln.coef_[0])
+print("LSTAT Coefficient :  ", eln.coef_[1])
+print("PTRAIO Coefficient :  ", eln.coef_[2])
+
+mse = mean_squared_error(y_test, y_pred)
+rmse = math.sqrt(mse)
+mae = mean_absolute_error(y_test, y_pred)
+r_squared = r2_score(y_test, y_pred)
+
+print(f"\nMean Squared Error (MSE):", mse)
+print(f"Root Mean Squared Error (RMSE):", rmse)
+print(f"Mean Absolute Error (MAE):", mae)
+print(f"R-squared (R²):", r_squared)
+
+positions = [0, 1, 2]
+plt.plot(positions, cff[:3], color='red')
+plt.xticks(positions, ['RM','LSTAT','PTRATIO'], rotation=45)
+plt.ylabel('Coefficient Value')
+plt.title('ElasticNet Coefficients for Selected Features')
+plt.grid(True)
+plt.show()
+
+
+plt.figure(figsize=(10, 6))
+X_line = np.linspace(X['RM'].min(), X['RM'].max(), 100).reshape(-1, 1)
+LSTAT_mean = np.full_like(X_line, X['LSTAT'].mean())
+PTRATIO_mean = np.full_like(X_line, X['PTRATIO'].mean())
+X_line_full = np.hstack([X_line, LSTAT_mean, PTRATIO_mean])
+X_line_full_scaled = scaler.transform(X_line_full)
+
+ridge_pred = RCV.predict(X_line_full_scaled)
+lasso_pred = lasso.predict(X_line_full_scaled)
+elastic_pred = eln.predict(X_line_full_scaled)
+
+plt.plot(X_line, ridge_pred, color='blue', label='Ridge Regression')
+plt.plot(X_line, lasso_pred, color='red', label='Lasso Regression')
+plt.plot(X_line, elastic_pred, color='green', label='ElasticNet Regression')
+plt.title('Comparison of Ridge, Lasso, and ElasticNet Regression on Boston Housing Data')
+plt.xlabel('Average Number of Rooms (RM)')
+plt.ylabel('Median Value of Homes (Price)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+RM_value = 5
+LSTAT_value = X['LSTAT'].mean()
+PTRATIO_value = X['PTRATIO'].mean()
+
+new_house = np.array([[RM_value, LSTAT_value, PTRATIO_value]])
+new_house_scaled = scaler.transform(new_house)
+
+ridge_price = RCV.predict(new_house_scaled)[0]
+lasso_price = lasso.predict(new_house_scaled)[0]
+elastic_price = eln.predict(new_house_scaled)[0]
+
+print("\nPredicted Median Home Value for a House with 5 Rooms:")
+print(f" Ridge Regression Prediction     : ${ridge_price:,.2f}")
+print(f" Lasso Regression Prediction     : ${lasso_price:,.2f}")
+print(f" ElasticNet Regression Prediction: ${elastic_price:,.2f}")
+
+
+Q2
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+df = pd.read_csv("UniversalBank.csv")
+if 'ID' in df.columns:
+    df = df.drop('ID', axis=1)
+if 'ZIP Code' in df.columns:
+    df = df.drop('ZIP Code', axis=1)
+
+le = LabelEncoder()
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = le.fit_transform(df[col])
+
+X = df.drop('Personal Loan', axis=1)
+y = df['Personal Loan']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = SVC(kernel='linear')
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+print("Predicted:", y_pred[:10])
+print("Actual:   ", y_test.values[:10])
+print("Accuracy:", accuracy_score(y_test, y_pred))
